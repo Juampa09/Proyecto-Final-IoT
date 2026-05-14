@@ -1,106 +1,133 @@
 import streamlit as st
-import pandas as pd
-import matplotlib.pyplot as plt
 from influxdb_client import InfluxDBClient
-from datetime import datetime
-import time
+import pandas as pd
+import plotly.express as px
 
-# --- CONFIGURACIÓN DE INFLUXDB ---
-url = "[https://us-east-1-1.aws.cloud2.influxdata.com](https://us-east-1-1.aws.cloud2.influxdata.com/)"   # Cambia por la URL de tu servidor Influx
-token = "JoKdx3OFaBCFPmYQgiVWE8hjrtJ0lDkjwWZzT9djWJlvg98rtTgF9iRgKhQtAkKIA2UQsU6zsrJlv1BH6lfsVw=="              # Token de autenticación
-org = "miguelcmo "                  # Organización
-bucket = "iot_telemetry_data"            # Bucket donde están los datos
+# ---------------------------
+# CONFIG
+# ---------------------------
+url = "[https://us-east-1-1.aws.cloud2.influxdata.com](https://us-east-1-1.aws.cloud2.influxdata.com/)"
+token = "JoKdx3OFaBCFPmYQgiVWE8hjrtJ0lDkjwWZzT9djWJlvg98rtTgF9iRgKhQtAkKIA2UQsU6zsrJlv1BH6lfsVw=="   # Reemplaza con tu token real
+org = "miguelcmo "       # Reemplaza con tu organización
+bucket = "iot_telemetry_data"
 
-client = InfluxDBClient(url=url, token=token, org=org)
-query_api = client.query_api()
+# ---------------------------
+# STREAMLIT UI
+# ---------------------------
+st.set_page_config(page_title="IoT Dashboard", layout="wide")
 
-st.title("Dashboard IoT con DHT22 y MPU6050")
+st.title("🌡️ IoT Telemetry Dashboard")
+st.markdown("Monitoreo de temperatura y humedad en tiempo real")
 
-# --- FILTROS ---
-device_id = st.text_input("Filtrar por device_id (opcional)")
-fecha_inicio = st.date_input("Fecha inicial")
-fecha_fin = st.date_input("Fecha final")
+# Sidebar
+st.sidebar.header("Configuración")
 
-# --- FUNCIÓN PARA CONSULTAR DATOS ---
-def get_data():
-    # Convertir fechas a RFC3339
-    start_str = datetime.combine(fecha_inicio, datetime.min.time()).isoformat() + "Z"
-    end_str = datetime.combine(fecha_fin, datetime.max.time()).isoformat() + "Z"
+time_range = st.sidebar.selectbox(
+    "Rango de tiempo",
+    ["-1h", "-6h", "-12h", "-24h", "-7d"],
+    index=3
+)
+
+refresh = st.sidebar.slider("Auto-refresh (segundos)", 0, 60, 10)
+
+# ---------------------------
+# DATA FUNCTION
+# ---------------------------
+@st.cache_data(ttl=10)
+def load_data(time_range):
+    client = InfluxDBClient(url=url, token=token, org=org)
+    query_api = client.query_api()
 
     query = f'''
     from(bucket: "{bucket}")
-      |> range(start: {start_str}, stop: {end_str})
-      |> filter(fn: (r) => r["_measurement"] == "iot_data")
+      |> range(start: {time_range})
+      |> filter(fn: (r) => r["_field"] == "temperature" or r["_field"] == "humidity")
+      |> pivot(rowKey:["_time"], columnKey: ["_field"], valueColumn: "_value")
+      |> keep(columns: ["_time", "temperature", "humidity"])
     '''
-    if device_id:
-        query += f'  |> filter(fn: (r) => r["device_id"] == "{device_id}")'
 
-    tables = query_api.query(query)
-    records = []
-    for table in tables:
-        for record in table.records:
-            records.append({
-                "timestamp": record["_time"],
-                "field": record["_field"],
-                "value": record["_value"],
-                "device_id": record["device_id"]
-            })
-    return pd.DataFrame(records)
+    result = query_api.query_data_frame(query)
 
-# --- LOOP DE ACTUALIZACIÓN CADA 5 MIN ---
-while True:
-    df = get_data()
+    if isinstance(result, list):
+        df = pd.concat(result)
+    else:
+        df = result
 
-    if not df.empty:
-        st.write("Vista previa de los datos:", df.head())
+    if df.empty:
+        return df
 
-        # --- ESTADÍSTICAS ---
-        temp_mean = df[df["field"]=="temperature"]["value"].mean()
-        hum_mean = df[df["field"]=="humidity"]["value"].mean()
-        accel_x_max = df[df["field"]=="accel_x"]["value"].max()
-        accel_y_max = df[df["field"]=="accel_y"]["value"].max()
-        accel_z_max = df[df["field"]=="accel_z"]["value"].max()
+    df["_time"] = pd.to_datetime(df["_time"])
+    df = df.sort_values("_time")
 
-        st.write("Temperatura promedio (DHT22):", round(temp_mean, 2))
-        st.write("Humedad promedio (DHT22):", round(hum_mean, 2))
-        st.write("Máxima aceleración X (MPU6050):", accel_x_max)
-        st.write("Máxima aceleración Y (MPU6050):", accel_y_max)
-        st.write("Máxima aceleración Z (MPU6050):", accel_z_max)
+    return df
 
-        # --- GRÁFICAS ---
-        st.subheader("Gráficas")
+# ---------------------------
+# LOAD DATA
+# ---------------------------
+df = load_data(time_range)
 
-        # Serie de tiempo: temperatura
-        temp_df = df[df["field"]=="temperature"]
-        fig, ax = plt.subplots()
-        ax.plot(temp_df["timestamp"], temp_df["value"], color="red")
-        ax.set_title("Temperatura vs Tiempo (DHT22)")
-        st.pyplot(fig)
+# ---------------------------
+# METRICS
+# ---------------------------
+if not df.empty:
+    col1, col2, col3, col4 = st.columns(4)
 
-        # Serie de tiempo: humedad
-        hum_df = df[df["field"]=="humidity"]
-        fig, ax = plt.subplots()
-        ax.plot(hum_df["timestamp"], hum_df["value"], color="blue")
-        ax.set_title("Humedad vs Tiempo (DHT22)")
-        st.pyplot(fig)
+    col1.metric("🌡️ Temp actual", f"{df['temperature'].iloc[-1]:.2f} °C")
+    col2.metric("💧 Humedad actual", f"{df['humidity'].iloc[-1]:.2f} %")
+    col3.metric("📊 Temp promedio", f"{df['temperature'].mean():.2f} °C")
+    col4.metric("📊 Humedad promedio", f"{df['humidity'].mean():.2f} %")
 
-        # Serie de tiempo: aceleraciones
-        for axis in ["accel_x", "accel_y", "accel_z"]:
-            accel_df = df[df["field"]==axis]
-            fig, ax = plt.subplots()
-            ax.plot(accel_df["timestamp"], accel_df["value"])
-            ax.set_title(f"Aceleración {axis.upper()} vs Tiempo (MPU6050)")
-            st.pyplot(fig)
+# ---------------------------
+# CHARTS
+# ---------------------------
+if not df.empty:
 
-        # --- INTERPRETACIONES DINÁMICAS ---
-        st.subheader("Interpretaciones")
-        if temp_mean > 30:
-            st.warning("Advertencia: La temperatura promedio supera los 30°C.")
-        if hum_mean < 30:
-            st.warning("Advertencia: Humedad baja detectada.")
-        if accel_x_max > 2 or accel_y_max > 2 or accel_z_max > 2:
-            st.error("Alerta: Movimiento brusco detectado en el MPU6050.")
+    st.subheader("📈 Serie de tiempo")
 
-    # Espera 5 minutos antes de actualizar
-    time.sleep(300)
+    fig = px.line(
+        df,
+        x="_time",
+        y=["temperature", "humidity"],
+        title="Temperature & Humidity"
+    )
+    st.plotly_chart(fig, use_container_width=True)
+
+    # ---------------------------
+    # RESAMPLING
+    # ---------------------------
+    st.subheader("⏱️ Promedio cada 10 minutos")
+
+    df["temperature"] = pd.to_numeric(df["temperature"], errors="coerce")
+    df["humidity"] = pd.to_numeric(df["humidity"], errors="coerce")
+    df["_time"] = pd.to_datetime(df["_time"])
+
+    df_resampled = (
+        df.set_index("_time")[["temperature", "humidity"]]
+        .resample("10min")
+        .mean()
+        .dropna()
+    )
+
+    fig2 = px.line(
+        df_resampled,
+        x=df_resampled.index,
+        y=["temperature", "humidity"],
+        title="Smoothed Data (10min avg)"
+    )
+    st.plotly_chart(fig2, use_container_width=True)
+
+    # ---------------------------
+    # RAW DATA
+    # ---------------------------
+    st.subheader("📋 Datos crudos")
+    st.dataframe(df.tail(50))
+
+else:
+    st.warning("No hay datos disponibles en este rango de tiempo")
+
+# ---------------------------
+# AUTO REFRESH
+# ---------------------------
+if refresh > 0:
+    st.experimental_rerun()
 
