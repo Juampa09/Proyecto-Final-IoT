@@ -82,12 +82,9 @@ if not df.empty:
 # ---------------------------
 if not df.empty:
 
-    # ---------------------------
     # HEATMAP TEMPERATURA
-    # ---------------------------
     st.subheader("🌡️ Heatmap de Temperatura")
 
-    # Crear tabla pivote: filas = fechas, columnas = horas
     df["_date"] = df["_time"].dt.date
     df["_hour"] = df["_time"].dt.hour
 
@@ -107,9 +104,7 @@ if not df.empty:
     )
     st.plotly_chart(fig_temp, use_container_width=True)
 
-    # ---------------------------
     # SCATTER HUMEDAD
-    # ---------------------------
     st.subheader("💧 Dispersión de Humedad")
 
     fig_hum = px.scatter(
@@ -121,10 +116,8 @@ if not df.empty:
     )
     st.plotly_chart(fig_hum, use_container_width=True)
 
-    # ---------------------------
-    # RESAMPLING
-    # ---------------------------
-    st.subheader("⏱️ Promedio cada 10 minutos")
+    # DENSITY PLOT PROMEDIO
+    st.subheader("⏱️ Distribución (Density Plot) cada 10 minutos")
 
     df["temperature"] = pd.to_numeric(df["temperature"], errors="coerce")
     df["humidity"] = pd.to_numeric(df["humidity"], errors="coerce")
@@ -137,17 +130,15 @@ if not df.empty:
         .dropna()
     )
 
-    fig2 = px.line(
-        df_resampled,
-        x=df_resampled.index,
-        y=["temperature", "humidity"],
-        title="Smoothed Data (10min avg)"
+    fig_density = px.density_contour(
+        df_resampled.reset_index(),
+        x="temperature",
+        y="humidity",
+        title="Density Plot (10min avg)"
     )
-    st.plotly_chart(fig2, use_container_width=True)
+    st.plotly_chart(fig_density, use_container_width=True)
 
-    # ---------------------------
     # RAW DATA
-    # ---------------------------
     st.subheader("📋 Datos crudos")
     st.dataframe(df.tail(50))
 
