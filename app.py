@@ -7,8 +7,8 @@ import plotly.express as px
 # CONFIG
 # ---------------------------
 url = "https://us-east-1-1.aws.cloud2.influxdata.com"
-token = "JoKdx3OFaBCFPmYQgiVWE8hjrtJ0lDkjwWZzT9djWJlvg98rtTgF9iRgKhQtAkKIA2UQsU6zsrJlv1BH6lfsVw"
-org = "miguelcmo"      
+token = "JoKdx3OFaBCFPmYQgiVWE8hjrtJ0lDkjwWZzT9djWJlvg98rtTgF9iRgKhQtAkKIA2UQsU6zsrJlv1BH6lfsVw=="   # Reemplaza con tu token real
+org = "miguelcmo"       # Reemplaza con tu organización
 bucket = "iot_telemetry_data"
 
 # ---------------------------
@@ -82,9 +82,12 @@ if not df.empty:
 # ---------------------------
 if not df.empty:
 
+    # ---------------------------
     # HEATMAP TEMPERATURA
+    # ---------------------------
     st.subheader("🌡️ Heatmap de Temperatura")
 
+    # Crear tabla pivote: filas = fechas, columnas = horas
     df["_date"] = df["_time"].dt.date
     df["_hour"] = df["_time"].dt.hour
 
@@ -104,7 +107,9 @@ if not df.empty:
     )
     st.plotly_chart(fig_temp, use_container_width=True)
 
+    # ---------------------------
     # SCATTER HUMEDAD
+    # ---------------------------
     st.subheader("💧 Dispersión de Humedad")
 
     fig_hum = px.scatter(
@@ -116,8 +121,10 @@ if not df.empty:
     )
     st.plotly_chart(fig_hum, use_container_width=True)
 
-    # BARRAS PROMEDIO
-    st.subheader("⏱️ Promedio cada 10 minutos (Bar Chart)")
+    # ---------------------------
+    # RESAMPLING
+    # ---------------------------
+    st.subheader("⏱️ Promedio cada 10 minutos")
 
     df["temperature"] = pd.to_numeric(df["temperature"], errors="coerce")
     df["humidity"] = pd.to_numeric(df["humidity"], errors="coerce")
@@ -130,16 +137,17 @@ if not df.empty:
         .dropna()
     )
 
-    fig_bar = px.bar(
+    fig2 = px.line(
         df_resampled,
         x=df_resampled.index,
         y=["temperature", "humidity"],
-        barmode="group",
-        title="Promedio cada 10 minutos (Bar Chart)"
+        title="Smoothed Data (10min avg)"
     )
-    st.plotly_chart(fig_bar, use_container_width=True)
+    st.plotly_chart(fig2, use_container_width=True)
 
+    # ---------------------------
     # RAW DATA
+    # ---------------------------
     st.subheader("📋 Datos crudos")
     st.dataframe(df.tail(50))
 
