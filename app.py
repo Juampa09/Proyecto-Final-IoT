@@ -7,8 +7,8 @@ import plotly.express as px
 # CONFIG
 # ---------------------------
 url = "https://us-east-1-1.aws.cloud2.influxdata.com"
-token = "JoKdx3OFaBCFPmYQgiVWE8hjrtJ0lDkjwWZzT9djWJlvg98rtTgF9iRgKhQtAkKIA2UQsU6zsrJlv1BH6lfsVw=="   # Reemplaza con tu token real
-org = "miguelcmo"       # Reemplaza con tu organización
+token = "JoKdx3OFaBCFPmYQgiVWE8hjrtJ0lDkjwWZzT9djWJlvg98rtTgF9iRgKhQtAkKIA2UQsU6zsrJlv1BH6lfsVw=="   
+org = "miguelcmo"       
 bucket = "iot_telemetry_data"
 
 # ---------------------------
