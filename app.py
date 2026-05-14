@@ -7,8 +7,8 @@ import plotly.express as px
 # CONFIG
 # ---------------------------
 url = "https://us-east-1-1.aws.cloud2.influxdata.com"
-token = "JoKdx3OFaBCFPmYQgiVWE8hjrtJ0lDkjwWZzT9djWJlvg98rtTgF9iRgKhQtAkKIA2UQsU6zsrJlv1BH6lfsVw=="   # Reemplaza con tu token real
-org = "miguelcmo"       # Reemplaza con tu organización
+token = "JoKdx3OFaBCFPmYQgiVWE8hjrtJ0lDkjwWZzT9djWJlvg98rtTgF9iRgKhQtAkKIA2UQsU6zsrJlv1BH6lfsVw"
+org = "miguelcmo"      
 bucket = "iot_telemetry_data"
 
 # ---------------------------
@@ -116,8 +116,8 @@ if not df.empty:
     )
     st.plotly_chart(fig_hum, use_container_width=True)
 
-    # DENSITY PLOT PROMEDIO
-    st.subheader("⏱️ Distribución (Density Plot) cada 10 minutos")
+    # BARRAS PROMEDIO
+    st.subheader("⏱️ Promedio cada 10 minutos (Bar Chart)")
 
     df["temperature"] = pd.to_numeric(df["temperature"], errors="coerce")
     df["humidity"] = pd.to_numeric(df["humidity"], errors="coerce")
@@ -130,13 +130,14 @@ if not df.empty:
         .dropna()
     )
 
-    fig_density = px.density_contour(
-        df_resampled.reset_index(),
-        x="temperature",
-        y="humidity",
-        title="Density Plot (10min avg)"
+    fig_bar = px.bar(
+        df_resampled,
+        x=df_resampled.index,
+        y=["temperature", "humidity"],
+        barmode="group",
+        title="Promedio cada 10 minutos (Bar Chart)"
     )
-    st.plotly_chart(fig_density, use_container_width=True)
+    st.plotly_chart(fig_bar, use_container_width=True)
 
     # RAW DATA
     st.subheader("📋 Datos crudos")
