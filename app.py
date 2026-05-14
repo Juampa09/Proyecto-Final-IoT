@@ -8,7 +8,7 @@ import plotly.express as px
 # ---------------------------
 url = "https://us-east-1-1.aws.cloud2.influxdata.com"
 token = "JoKdx3OFaBCFPmYQgiVWE8hjrtJ0lDkjwWZzT9djWJlvg98rtTgF9iRgKhQtAkKIA2UQsU6zsrJlv1BH6lfsVw=="   # Reemplaza con tu token real
-org = "miguelcmo "       # Reemplaza con tu organización
+org = "miguelcmo"       # Reemplaza con tu organización
 bucket = "iot_telemetry_data"
 
 # ---------------------------
@@ -82,22 +82,34 @@ if not df.empty:
 # ---------------------------
 if not df.empty:
 
-    # Temperatura como heatmap
+    # ---------------------------
+    # HEATMAP TEMPERATURA
+    # ---------------------------
     st.subheader("🌡️ Heatmap de Temperatura")
 
-    fig_temp = px.density_heatmap(
-        df,
-        x="_time",
-        y="temperature",
-        z=None,  # no se necesita valor adicional
-        nbinsx=30,
-        nbinsy=30,
-        color_continuous_scale="RdYlBu",
-        title="Heatmap de Temperatura vs Tiempo"
+    # Crear tabla pivote: filas = fechas, columnas = horas
+    df["_date"] = df["_time"].dt.date
+    df["_hour"] = df["_time"].dt.hour
+
+    pivot_temp = df.pivot_table(
+        index="_date",
+        columns="_hour",
+        values="temperature",
+        aggfunc="mean"
+    )
+
+    fig_temp = px.imshow(
+        pivot_temp,
+        color_continuous_scale="YlOrRd",
+        aspect="auto",
+        labels=dict(x="Hora del día", y="Fecha", color="Temperatura (°C)"),
+        title="Mapa de calor de Temperatura (DHT22)"
     )
     st.plotly_chart(fig_temp, use_container_width=True)
 
-    # Humedad como gráfico de dispersión
+    # ---------------------------
+    # SCATTER HUMEDAD
+    # ---------------------------
     st.subheader("💧 Dispersión de Humedad")
 
     fig_hum = px.scatter(
