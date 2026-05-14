@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
 from influxdb_client import InfluxDBClient
+from datetime import datetime
 import time
 
 # --- CONFIGURACIÓN DE INFLUXDB ---
@@ -13,7 +14,7 @@ bucket = "iot_telemetry_data"            # Bucket donde están los datos
 client = InfluxDBClient(url=url, token=token, org=org)
 query_api = client.query_api()
 
-st.title("Dashboard IoT")
+st.title("Dashboard IoT con DHT22 y MPU6050")
 
 # --- FILTROS ---
 device_id = st.text_input("Filtrar por device_id (opcional)")
@@ -22,9 +23,13 @@ fecha_fin = st.date_input("Fecha final")
 
 # --- FUNCIÓN PARA CONSULTAR DATOS ---
 def get_data():
+    # Convertir fechas a RFC3339
+    start_str = datetime.combine(fecha_inicio, datetime.min.time()).isoformat() + "Z"
+    end_str = datetime.combine(fecha_fin, datetime.max.time()).isoformat() + "Z"
+
     query = f'''
     from(bucket: "{bucket}")
-      |> range(start: {fecha_inicio}, stop: {fecha_fin})
+      |> range(start: {start_str}, stop: {end_str})
       |> filter(fn: (r) => r["_measurement"] == "iot_data")
     '''
     if device_id:
@@ -65,14 +70,14 @@ while True:
         # --- GRÁFICAS ---
         st.subheader("Gráficas")
 
-        # Serie de tiempo: temperatura vs tiempo
+        # Serie de tiempo: temperatura
         temp_df = df[df["field"]=="temperature"]
         fig, ax = plt.subplots()
         ax.plot(temp_df["timestamp"], temp_df["value"], color="red")
         ax.set_title("Temperatura vs Tiempo (DHT22)")
         st.pyplot(fig)
 
-        # Serie de tiempo: humedad vs tiempo
+        # Serie de tiempo: humedad
         hum_df = df[df["field"]=="humidity"]
         fig, ax = plt.subplots()
         ax.plot(hum_df["timestamp"], hum_df["value"], color="blue")
@@ -98,3 +103,4 @@ while True:
 
     # Espera 5 minutos antes de actualizar
     time.sleep(300)
+
