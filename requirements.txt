@@ -3,3 +3,4 @@ pandas
 matplotlib
 influxdb-client
 plotly
+pip install streamlit-autorefresh
