@@ -129,5 +129,5 @@ else:
 # AUTO REFRESH
 # ---------------------------
 if refresh > 0:
-    st.experimental_rerun()
+    st.rerun()
 
