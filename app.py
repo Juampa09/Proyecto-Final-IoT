@@ -82,15 +82,32 @@ if not df.empty:
 # ---------------------------
 if not df.empty:
 
-    st.subheader("📈 Serie de tiempo")
+    # Temperatura como heatmap
+    st.subheader("🌡️ Heatmap de Temperatura")
 
-    fig = px.line(
+    fig_temp = px.density_heatmap(
         df,
         x="_time",
-        y=["temperature", "humidity"],
-        title="Temperature & Humidity"
+        y="temperature",
+        z=None,  # no se necesita valor adicional
+        nbinsx=30,
+        nbinsy=30,
+        color_continuous_scale="RdYlBu",
+        title="Heatmap de Temperatura vs Tiempo"
     )
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig_temp, use_container_width=True)
+
+    # Humedad como gráfico de dispersión
+    st.subheader("💧 Dispersión de Humedad")
+
+    fig_hum = px.scatter(
+        df,
+        x="_time",
+        y="humidity",
+        color="humidity",
+        title="Humedad vs Tiempo (Scatter)"
+    )
+    st.plotly_chart(fig_hum, use_container_width=True)
 
     # ---------------------------
     # RESAMPLING
