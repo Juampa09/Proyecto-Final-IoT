@@ -5,10 +5,10 @@ from influxdb_client import InfluxDBClient
 import time
 
 # --- CONFIGURACIÓN DE INFLUXDB ---
-url = "http://localhost:8086"   # Cambia por la URL de tu servidor Influx
-token = "TU_TOKEN"              # Token de autenticación
-org = "TU_ORG"                  # Organización
-bucket = "TU_BUCKET"            # Bucket donde están los datos
+url = "[https://us-east-1-1.aws.cloud2.influxdata.com](https://us-east-1-1.aws.cloud2.influxdata.com/)"   # Cambia por la URL de tu servidor Influx
+token = "JoKdx3OFaBCFPmYQgiVWE8hjrtJ0lDkjwWZzT9djWJlvg98rtTgF9iRgKhQtAkKIA2UQsU6zsrJlv1BH6lfsVw=="              # Token de autenticación
+org = "0925ccf91ab36478"                  # Organización
+bucket = "iot_telemetry_data"            # Bucket donde están los datos
 
 client = InfluxDBClient(url=url, token=token, org=org)
 query_api = client.query_api()
