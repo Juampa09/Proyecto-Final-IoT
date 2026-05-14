@@ -62,6 +62,12 @@ def load_data(time_range):
     return df
 
 # ---------------------------
+# AUTO REFRESH SOLO GRÁFICAS
+# ---------------------------
+if refresh > 0:
+    st_autorefresh = st.experimental_autorefresh(interval=refresh * 1000, key="data_refresh")
+
+# ---------------------------
 # LOAD DATA
 # ---------------------------
 df = load_data(time_range)
@@ -87,7 +93,6 @@ if not df.empty:
     # ---------------------------
     st.subheader("🌡️ Heatmap de Temperatura")
 
-    # Crear tabla pivote: filas = fechas, columnas = horas
     df["_date"] = df["_time"].dt.date
     df["_hour"] = df["_time"].dt.hour
 
@@ -153,10 +158,4 @@ if not df.empty:
 
 else:
     st.warning("No hay datos disponibles en este rango de tiempo")
-
-# ---------------------------
-# AUTO REFRESH
-# ---------------------------
-if refresh > 0:
-    st.rerun()
 
