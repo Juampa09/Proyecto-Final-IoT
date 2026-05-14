@@ -2,12 +2,13 @@ import streamlit as st
 from influxdb_client import InfluxDBClient
 import pandas as pd
 import plotly.express as px
+from streamlit_autorefresh import st_autorefresh
 
 # ---------------------------
 # CONFIG
 # ---------------------------
 url = "https://us-east-1-1.aws.cloud2.influxdata.com"
-token = "JoKdx3OFaBCFPmYQgiVWE8hjrtJ0lDkjwWZzT9djWJlvg98rtTgF9iRgKhQtAkKIA2UQsU6zsrJlv1BH6lfsVw=="   # Reemplaza con tu token real
+token = "TU_TOKEN"   # Reemplaza con tu token real
 org = "miguelcmo"       # Reemplaza con tu organización
 bucket = "iot_telemetry_data"
 
@@ -65,7 +66,7 @@ def load_data(time_range):
 # AUTO REFRESH SOLO GRÁFICAS
 # ---------------------------
 if refresh > 0:
-    st_autorefresh = st.experimental_autorefresh(interval=refresh * 1000, key="data_refresh")
+    st_autorefresh(interval=refresh * 1000, key="data_refresh")
 
 # ---------------------------
 # LOAD DATA
@@ -158,4 +159,3 @@ if not df.empty:
 
 else:
     st.warning("No hay datos disponibles en este rango de tiempo")
-
